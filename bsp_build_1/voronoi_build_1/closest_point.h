@@ -47,8 +47,12 @@ struct PointCloudHalfSpace2D {
 
     void GetArcs(std::vector<Arc> &output)const;
 private:
+    const Vec2f div_o, div_d;
     // Temp
+    std::vector<Vec2f> points_added_;
     std::vector<Arc> arcs_;
+    
+    void AddPointIfNotRuledOut(Vec2f const&pt);
 };
 
 

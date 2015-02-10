@@ -22,7 +22,6 @@
 using namespace std;
 
 int random_seed = 234;
-//Vec2f div_o(0,0), div_d(0.5, 0.3);
 Vec2f div_o(0,0.5), div_d(1,0);
 vector<Vec2f> points;
 
@@ -52,13 +51,19 @@ bool OnPositiveSide(Vec2f const&loc,
 
 bool view_mode = false;
 Vec2f selected_pt(0.4, 0.6);
-//Vec2i resolution(200, 150);
-Vec2i resolution(200  * 1.5, 150 * 1.5);
+Vec2i resolution(200, 150);
+//Vec2i resolution(200  * 1.5, 150 * 1.5);
 
 // -0.306667 -0.380000 b 0.413333 0.360000 c 0.223333 -0.083333
+/*
 Vec2f int_test_a(-0.306667, -0.380000),
       int_test_b(0.413333, 0.360000),
       int_test_c(0.223333, -0.083333);
+*/
+
+Vec2f int_test_a(0,0),
+        int_test_b(0,0),
+        int_test_c(0,0);
 
 static void
 Init(void)
@@ -291,6 +296,22 @@ Draw(void)
             glVertex2fv((const float*)&loc);
         }
         glEnd();
+    }
+    
+    {
+        PointCloudHalfSpace2D halfspace(div_o, div_d, points);
+        std::vector<PointCloudHalfSpace2D::Arc> arcs;
+        halfspace.GetArcs(arcs);
+        for(PointCloudHalfSpace2D::Arc const&test_par : arcs)
+        {
+            glColor3f(0, 0, 1);
+            glBegin(GL_LINE_STRIP);
+            for(int col=0;col<resolution.width;++col) {
+                const Vec2f loc = test_par.Point(col / float (resolution.width - 1));
+                glVertex2fv((const float*)&loc);
+            }
+            glEnd();
+        }
     }
     
     fprintf(stderr, "--- drew\n");
