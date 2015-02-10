@@ -74,7 +74,6 @@ private:
     
     void AddPointIfNotRuledOut(Vec2f const&pt);
     void AddArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt);
-    bool RuledOut(Vec2f const&pt)const;
 };
 
 

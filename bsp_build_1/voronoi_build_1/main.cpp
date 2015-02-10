@@ -51,7 +51,7 @@ bool OnPositiveSide(Vec2f const&loc,
 
 bool view_mode = false;
 Vec2f selected_pt(0.4, 0.6);
-Vec2i resolution(200, 150);
+Vec2i resolution(200 * 0.5, 150 * 0.5);
 //Vec2i resolution(200  * 1.5, 150 * 1.5);
 
 // -0.306667 -0.380000 b 0.413333 0.360000 c 0.223333 -0.083333
@@ -70,8 +70,10 @@ Init(void)
 {
     points.clear();
     
-    points.push_back(Vec2f(-0.316, -0.393));
-    points.push_back(Vec2f(0.42, 0.363));
+    points.push_back(Vec2f(-0.960000, -0.293333));
+    points.push_back(Vec2f(-0.423333, -0.666667));
+    points.push_back(Vec2f(0.610000, 0.060000));
+    points.push_back(Vec2f(1.880000, -0.350000));
 }
 
 Extrema2f GetViewingExtents() {
@@ -93,6 +95,7 @@ Key(unsigned char key, int x, int y)
         case ' ':
             Init();
             points.clear();
+            fprintf(stderr, "---\n");
             glutPostRedisplay();
             break;
         case 'n':
@@ -106,6 +109,7 @@ Key(unsigned char key, int x, int y)
             break;
         case 'a':
             points.push_back(pt_here);
+            fprintf(stderr, "add %f %f\n", pt_here.x, pt_here.y);
             glutPostRedisplay();
             break;
         case '1':

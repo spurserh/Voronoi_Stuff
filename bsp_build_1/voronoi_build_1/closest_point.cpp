@@ -28,7 +28,11 @@ Vec2f PointCloudHalfSpace2D::Arc::Point(float t)const {
 // = 0 is exactly on the arc.
 // > 0 is beyond the arc, away from the line.
 int PointCloudHalfSpace2D::Arc::IsBetweenArcAndLine(Vec2f const&pt)const {
-    return 0;
+    // NOTE: We don't actually bounds check, so really this is circle vs line
+    const float dist_o = (o-pt).Length();
+    if(::fabs(dist_o - r) < 0.0001f)
+        return 0;
+    return (dist_o < r) ? -1 : 1;
 }
 
 namespace {    
@@ -73,10 +77,6 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
     }
 }
 
-bool PointCloudHalfSpace2D::RuledOut(Vec2f const&pt)const {
-    return true;
-}
-
 void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
     if (points_added_.size() == 0) {
         points_added_.insert(pt);
@@ -85,8 +85,11 @@ void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
         points_added_.insert(pt);
         last_pt_added = pt;
     } else if(points_added_.size() > 1) {
-        if(!RuledOut(pt)) {
-        Arc to_remove = arcs_by_start_pt_.find(last_pt_added)->second;
+        const Arc to_remove = arcs_by_start_pt_.find(last_pt_added)->second;
+        // TODO: Handle points on same arc efficiently
+        bool ruled_out = (to_remove.IsBetweenArcAndLine(pt) > 0);
+        fprintf(stderr, "ruled_out %i\n", (int)ruled_out);
+        if(!ruled_out) {
             arcs_by_start_pt_.erase(last_pt_added);
             AddArcForPoints(to_remove.pt_a, pt);
             AddArcForPoints(pt, to_remove.pt_b);
