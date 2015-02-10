@@ -6,6 +6,7 @@
 #include <vector>
 #include <cfloat>
 #include <map>
+#include <set>
 
 struct PointClassification {
     inline PointClassification(bool side, bool border)
@@ -20,6 +21,20 @@ void ClassifyPoints(Vec2f const&div_o,
                     Vec2f const&div_d,
                     std::vector<Vec2f> const&points,
                     std::map<Vec2f, PointClassification> &output);
+
+
+struct sort_by_pos_dir {
+    sort_by_pos_dir(Vec2f const&o, Vec2f const&d)
+    : o(o), d(d) {
+    }
+    bool operator() (Vec2f const&a, Vec2f const&b)const {
+        const float t_a = (a-o).Dot(d);
+        const float t_b = (b-o).Dot(d);
+        return t_a < t_b;
+    }
+    const Vec2f o, d;
+};
+
 
 struct PointCloudHalfSpace2D {
     struct Arc {
@@ -39,6 +54,9 @@ struct PointCloudHalfSpace2D {
         float r;
         float a_min_rads;
         float a_max_rads;
+        
+        // Convenience
+        const Vec2f pt_a, pt_b;
     };
 
     PointCloudHalfSpace2D(Vec2f const&div_o,
@@ -48,11 +66,15 @@ struct PointCloudHalfSpace2D {
     void GetArcs(std::vector<Arc> &output)const;
 private:
     const Vec2f div_o, div_d;
+    const sort_by_pos_dir sorter;
     // Temp
-    std::vector<Vec2f> points_added_;
-    std::vector<Arc> arcs_;
+    std::set<Vec2f> points_added_;
+    std::map<Vec2f, Arc> arcs_by_start_pt_;
+    Vec2f last_pt_added;
     
     void AddPointIfNotRuledOut(Vec2f const&pt);
+    void AddArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt);
+    bool RuledOut(Vec2f const&pt)const;
 };
 
 

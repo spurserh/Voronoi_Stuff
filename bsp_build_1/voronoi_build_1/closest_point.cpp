@@ -2,12 +2,16 @@
 #include "closest_point.h"
 #include <list>
 
+using namespace std;
+
 PointCloudHalfSpace2D::Arc::
     Arc(Vec2f const&o,
         Vec2f const&pt_a,
         Vec2f const&pt_b)
   : o(o),
-    r((o-pt_a).Length()){
+    r((o-pt_a).Length()),
+    pt_a(pt_a),
+    pt_b(pt_b) {
     const float rads_a = ::atan2(pt_a.y - o.y, pt_a.x - o.x);
     const float rads_b = ::atan2(pt_b.y - o.y, pt_b.x - o.x);
     a_min_rads = std::min(rads_a, rads_b);
@@ -27,19 +31,7 @@ int PointCloudHalfSpace2D::Arc::IsBetweenArcAndLine(Vec2f const&pt)const {
     return 0;
 }
 
-namespace {
-    struct sort_by_pos_dir {
-        sort_by_pos_dir(Vec2f const&o, Vec2f const&d)
-          : o(o), d(d) {
-        }
-        bool operator() (Vec2f const&a, Vec2f const&b) {
-            const float t_a = (a-o).Dot(d);
-            const float t_b = (b-o).Dot(d);
-            return t_a < t_b;
-        }
-        const Vec2f o, d;
-    };
-    
+namespace {    
     inline bool line_intersection(Vec2f p1, Vec2f p2, Vec2f p3, Vec2f p4, Vec2f &out_pt) {
         // Store the values for fast access and easy
         // equations-to-code conversion
@@ -65,9 +57,9 @@ namespace {
 PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
                                              Vec2f const&div_d,
                                              std::vector<Vec2f> const&points_unsorted)
-  : div_o(div_o), div_d(div_d) {
+  : div_o(div_o), div_d(div_d), sorter(div_o, div_d) {
     std::vector<Vec2f> points_sorted_v(points_unsorted);
-    std::sort(points_sorted_v.begin(), points_sorted_v.end(), sort_by_pos_dir(div_o, div_d));
+    std::sort(points_sorted_v.begin(), points_sorted_v.end(), sorter);
     std::list<Vec2f> points_sorted;
     std::copy(points_sorted_v.begin(), points_sorted_v.end(), std::back_inserter(points_sorted));
       for(bool use_front = true;!points_sorted.empty();use_front = !use_front) {
@@ -81,29 +73,41 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
     }
 }
 
-void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
-    // TODO: Need to check if ruled out
-    // TODO: Need to remove arcs
+bool PointCloudHalfSpace2D::RuledOut(Vec2f const&pt)const {
+    return true;
+}
 
+void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
     if (points_added_.size() == 0) {
-        points_added_.push_back(pt);
+        points_added_.insert(pt);
     } else if(points_added_.size() == 1) {
-        Vec2f const&o_pt = points_added_[0];
-        const Vec2f mid = (pt + o_pt) / 2.0f;
-        const Vec2f dir = (o_pt - pt).Normalized();
-        const Vec2f perp_dir(-dir.y, dir.x);
-        Vec2f int_pt;
-        // TODO: Check if ruled out
-        bool intersection = line_intersection(div_o, div_o + div_d, mid, mid + perp_dir, int_pt);
-        if(intersection) {
-            arcs_.push_back(Arc(int_pt, pt, o_pt));
-            points_added_.push_back(pt);
+        AddArcForPoints(pt, *points_added_.begin());
+        points_added_.insert(pt);
+        last_pt_added = pt;
+    } else if(points_added_.size() > 1) {
+        if(!RuledOut(pt)) {
+        Arc to_remove = arcs_by_start_pt_.find(last_pt_added)->second;
+            arcs_by_start_pt_.erase(last_pt_added);
+            AddArcForPoints(to_remove.pt_a, pt);
+            AddArcForPoints(pt, to_remove.pt_b);
+            points_added_.insert(pt);
+            last_pt_added = pt;
         }
-    } else {
-        // TODO
+    }
+}
+
+void PointCloudHalfSpace2D::AddArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt) {
+    const Vec2f mid = (more_pt + less_pt) / 2.0f;
+    const Vec2f dir = (less_pt - more_pt).Normalized();
+    const Vec2f perp_dir(-dir.y, dir.x);
+    Vec2f int_pt;
+    bool intersection = line_intersection(div_o, div_o + div_d, mid, mid + perp_dir, int_pt);
+    if(intersection) {
+        arcs_by_start_pt_.insert(map<Vec2f, Arc>::value_type(less_pt, Arc(int_pt, more_pt, less_pt)));
     }
 }
 
 void PointCloudHalfSpace2D::GetArcs(std::vector<Arc> &output)const {
-    std::copy(arcs_.begin(), arcs_.end(), std::back_inserter(output));
+    for(auto const&it : arcs_by_start_pt_)
+        output.push_back(it.second);
 }
