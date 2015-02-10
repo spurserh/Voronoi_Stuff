@@ -67,6 +67,7 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
     std::list<Vec2f> points_sorted;
     std::copy(points_sorted_v.begin(), points_sorted_v.end(), std::back_inserter(points_sorted));
       for(bool use_front = true;!points_sorted.empty();use_front = !use_front) {
+//      for(bool use_front = true;points_sorted.size() > 1;use_front = !use_front) {
         if(use_front) {
           AddPointIfNotRuledOut(points_sorted.front());
           points_sorted.pop_front();
@@ -78,19 +79,20 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
 }
 
 void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
+    fprintf(stderr, "adding %f %f\n", pt.x, pt.y);
     if (points_added_.size() == 0) {
         points_added_.insert(pt);
     } else if(points_added_.size() == 1) {
-        AddArcForPoints(pt, *points_added_.begin());
+        AddArcForPoints(*points_added_.begin(), pt);
         points_added_.insert(pt);
-        last_pt_added = pt;
     } else if(points_added_.size() > 1) {
-        const Arc to_remove = arcs_by_start_pt_.find(last_pt_added)->second;
+        const Arc to_remove =
+            (arcs_by_start_pt_.size() > 1) ? arcs_by_start_pt_.find(last_pt_added)->second : arcs_by_start_pt_.begin()->second;
         // TODO: Handle points on same arc efficiently
         bool ruled_out = (to_remove.IsBetweenArcAndLine(pt) > 0);
         fprintf(stderr, "ruled_out %i\n", (int)ruled_out);
         if(!ruled_out) {
-            arcs_by_start_pt_.erase(last_pt_added);
+            arcs_by_start_pt_.erase(to_remove.pt_a);
             AddArcForPoints(to_remove.pt_a, pt);
             AddArcForPoints(pt, to_remove.pt_b);
             points_added_.insert(pt);
@@ -100,13 +102,14 @@ void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
 }
 
 void PointCloudHalfSpace2D::AddArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt) {
+    assert(sorter(less_pt, more_pt));
     const Vec2f mid = (more_pt + less_pt) / 2.0f;
     const Vec2f dir = (less_pt - more_pt).Normalized();
     const Vec2f perp_dir(-dir.y, dir.x);
     Vec2f int_pt;
     bool intersection = line_intersection(div_o, div_o + div_d, mid, mid + perp_dir, int_pt);
     if(intersection) {
-        arcs_by_start_pt_.insert(map<Vec2f, Arc>::value_type(less_pt, Arc(int_pt, more_pt, less_pt)));
+        arcs_by_start_pt_.insert(map<Vec2f, Arc>::value_type(less_pt, Arc(int_pt, less_pt, more_pt)));
     }
 }
 
