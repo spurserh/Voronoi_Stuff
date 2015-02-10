@@ -14,3 +14,11 @@ voronoi_build_2/voronoi_build_2.xcodeproj/project.xcworkspace/xcshareddata/voron
 voronoi_build_2/voronoi_build_2.xcodeproj/project.xcworkspace/xcuserdata/seanrpurser-haskell.xcuserdatad/WorkspaceSettings.xcsettings
 
 voronoi_build_2/voronoi_build_2.xcodeproj/xcuserdata/seanrpurser-haskell.xcuserdatad/xcschemes/xcschememanagement.plist
+
+*.xccheckout
+
+*.xcsettings
+
+*.xcexplist
+
+bsp_build_1/bsp_build_1.xcodeproj/xcuserdata/seanrpurser-haskell.xcuserdatad/xcschemes/xcschememanagement.plist

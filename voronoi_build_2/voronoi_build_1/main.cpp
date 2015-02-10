@@ -63,12 +63,14 @@ Init(void)
     }
     voronoi.Add(Vec2f(0,0));
 */
+    /*
     // Spiral
     for(int r = 0;r<25;++r) {
         const float t = float(r) / float(25);
         const float rads = t * M_PI * 2.0f;
         voronoi.Add(Vec2f(::cos(rads) * 0.75f, ::sin(rads) * 0.75f) * (t+0.1));
     }
+     */
 }
 
 bool view_mode = false;
@@ -158,7 +160,6 @@ Draw(void)
                extents_expanded.mMin.y);
     
     glMatrixMode(GL_MODELVIEW);
-    
     
     // Brute force reference
     static const int nBruteRows = 800;
