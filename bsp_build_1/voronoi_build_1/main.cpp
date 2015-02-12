@@ -69,17 +69,43 @@ static void
 Init(void)
 {
     points.clear();
-    
-    points.push_back(Vec2f(-0.960000, -0.293333));
-    points.push_back(Vec2f(-0.423333, -0.666667));
-    points.push_back(Vec2f(0.610000, 0.060000));
-    points.push_back(Vec2f(1.880000, -0.350000));
+#if 0
+    points.push_back(Vec2f(-0.623333,0.023333));
+    points.push_back(Vec2f(0.213333,-0.296667));
+    points.push_back(Vec2f(0.790000,-0.490000));    // ruled out, removing removes problem. so it's an ordering issue
+    points.push_back(Vec2f(0.456667,0.043333));
+    points.push_back(Vec2f(0.303333, 0.170000));
+    points.push_back(Vec2f(1.056667,0.216667));
+#endif
+#if 0
+    points.push_back(Vec2f(-0.796667,-0.020000));
+    points.push_back(Vec2f(0.170000,-0.563333));
+    points.push_back(Vec2f(0.366667,0.256667));
+    points.push_back(Vec2f(0.653333,-0.490000));
+    points.push_back(Vec2f(-0.020000,-0.703333));
+    points.push_back(Vec2f(0.773333,0.483333));
+#endif
+#if 1
+    points.push_back(Vec2f(-0.906667,0.003333));
+    points.push_back(Vec2f(0.720000,-0.216667));
+    points.push_back(Vec2f(0.763333,0.113333));
+    points.push_back(Vec2f(0.153333,0.256667));
+    points.push_back(Vec2f(-0.426667,0.063333));
+#endif
 }
 
 Extrema2f GetViewingExtents() {
     const float aspect = float(resolution.width) / float(resolution.height);
     return Extrema2f(Vec2f(-1.0f * aspect, -1),
                      Vec2f( 1.0f * aspect,  1));
+}
+
+static void Passive(int x, int y){
+    const Extrema2f extents = GetViewingExtents();
+    const Vec2f pt_here = extents.mMin +
+        extents.GetSize() * (Vec2f(float(x), float(y)) / Vec2f(float(800), float(600)));
+
+    fprintf(stderr, "here %f %f\n", pt_here.x, pt_here.y);
 }
 
 /* ARGSUSED1 */
@@ -295,6 +321,12 @@ Draw(void)
         Vec2f dir = (int_test_b - int_test_a).Normalized();
         Vec2f perp_dir(-dir.y, dir.x);
         PointCloudHalfSpace2D::Arc test_par(int_test_a, int_test_b, int_test_c);
+        /*
+        test_par.r = 1.383532;
+        test_par.o = Vec2f(1.302754, 0.500000);
+        test_par.a_max_rads = M_PI * 2;
+        test_par.a_min_rads = 0;
+        */
         for(int col=0;col<resolution.width;++col) {
             const Vec2f loc = test_par.Point(col / float (resolution.width - 1));
             glVertex2fv((const float*)&loc);
@@ -342,6 +374,7 @@ main(int argc, char **argv)
 #endif
     Init();
     glutKeyboardFunc(Key);
+    glutPassiveMotionFunc(Passive);
     glutDisplayFunc(Draw);
     glutMainLoop();
     return 0;             /* ANSI C requires main to return int. */

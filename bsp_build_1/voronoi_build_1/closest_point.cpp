@@ -18,6 +18,7 @@ PointCloudHalfSpace2D::Arc::
     a_max_rads = std::max(rads_a, rads_b);
 }
 
+PointCloudHalfSpace2D::Arc::Arc() {}
 
 Vec2f PointCloudHalfSpace2D::Arc::Point(float t)const {
     const float a = a_min_rads + t * (a_max_rads - a_min_rads);
@@ -56,61 +57,112 @@ namespace {
         return true;
     }
 
+    Vec2f ClosestPointOnLine(Vec2f const&pt, Vec2f const&o, Vec2f const&d) {
+        const float t = (pt-o).Dot(d);
+        return o+d*t;
+    }
 }
 
 PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
                                              Vec2f const&div_d,
                                              std::vector<Vec2f> const&points_unsorted)
   : div_o(div_o), div_d(div_d), sorter(div_o, div_d) {
-    std::vector<Vec2f> points_sorted_v(points_unsorted);
-    std::sort(points_sorted_v.begin(), points_sorted_v.end(), sorter);
-    std::list<Vec2f> points_sorted;
-    std::copy(points_sorted_v.begin(), points_sorted_v.end(), std::back_inserter(points_sorted));
-      for(bool use_front = true;!points_sorted.empty();use_front = !use_front) {
-//      for(bool use_front = true;points_sorted.size() > 1;use_front = !use_front) {
-        if(use_front) {
-          AddPointIfNotRuledOut(points_sorted.front());
-          points_sorted.pop_front();
-        } else {
-          AddPointIfNotRuledOut(points_sorted.back());
-          points_sorted.pop_back();
+
+      fprintf(stderr, "----\n");
+      for(Vec2f const&pt : points_unsorted) {
+          fprintf(stderr, "\tpoints.push_back(Vec2f(%f,%f));\n", pt.x, pt.y);
+      }
+      fprintf(stderr, "\n");
+      
+    if(points_unsorted.size() >= 2) {
+        std::vector<Vec2f> points_sorted_v(points_unsorted);
+        std::sort(points_sorted_v.begin(), points_sorted_v.end(), sorter);
+        std::list<Vec2f> points_sorted;
+        std::copy(points_sorted_v.begin(), points_sorted_v.end(), std::back_inserter(points_sorted));
+        
+        // First arc is a special case
+        {
+            mod_arc_start_pt_ = points_sorted.front();
+            AddArc(ArcForPoints(points_sorted.front(), points_sorted.back()));
+            points_sorted.pop_front();
+            points_sorted.pop_back();
+        }
+        
+        while(points_sorted.size() > 0) {
+            Arc prev_arc = arcs_by_start_pt_[mod_arc_start_pt_];
+            if (points_sorted.size() == 1) {
+                Vec2f const&pt = points_sorted.front();
+                if(prev_arc.IsBetweenArcAndLine(pt) <= 0) {
+                    arcs_by_start_pt_.erase(mod_arc_start_pt_);
+                    AddArc(ArcForPoints(prev_arc.pt_a, pt));
+                    AddArc(ArcForPoints(pt, prev_arc.pt_b));
+                }
+                // Last one so no need for book-keeping
+                break;
+            } else {
+                // Need to tie-break
+                Vec2f front_pt = points_sorted.front();
+                Vec2f back_pt = points_sorted.back();
+             //   const float front_d = (front_pt - ClosestPointOnLine(front_pt, div_o, div_d)).Length();
+               // const float back_d = (back_pt - ClosestPointOnLine(back_pt, div_o, div_d)).Length();
+                Arc front_arcs[2] = {
+                    ArcForPoints(prev_arc.pt_a, front_pt),
+                    ArcForPoints(front_pt, prev_arc.pt_b),
+                };
+                Arc back_arcs[2] = {
+                    ArcForPoints(prev_arc.pt_a, back_pt),
+                    ArcForPoints(back_pt, prev_arc.pt_b),
+                };
+                
+                // TODO: Handle vertically oriented points
+                // TODO: Handle points on same arc efficiently
+                
+                // TODO: Consider both arcs?
+                bool front_ruled_out = (prev_arc.IsBetweenArcAndLine(front_pt) > 0 ||
+                                        back_arcs[0].IsBetweenArcAndLine(front_pt) > 0);
+                bool back_ruled_out = (prev_arc.IsBetweenArcAndLine(back_pt) > 0 ||
+                                       front_arcs[1].IsBetweenArcAndLine(back_pt) > 0);
+                
+                if(front_ruled_out && back_ruled_out) {
+                    points_sorted.pop_front();
+                    points_sorted.pop_back();
+                    continue;
+                }
+                
+                if(front_ruled_out) {
+                    points_sorted.pop_front();
+                    continue;
+                } else if(back_ruled_out) {
+                    points_sorted.pop_back();
+                    continue;
+                } else {
+                    arcs_by_start_pt_.erase(mod_arc_start_pt_);
+                    // Need to tie-break
+//                    const bool front_first = front_d < back_d;
+                    
+                    AddArc(front_arcs[0]);
+                    AddArc(ArcForPoints(front_pt, back_pt));
+                    mod_arc_start_pt_ = front_pt;
+                    AddArc(back_arcs[1]);
+                }
+            }
         }
     }
 }
 
-void PointCloudHalfSpace2D::AddPointIfNotRuledOut(Vec2f const&pt) {
-    fprintf(stderr, "adding %f %f\n", pt.x, pt.y);
-    if (points_added_.size() == 0) {
-        points_added_.insert(pt);
-    } else if(points_added_.size() == 1) {
-        AddArcForPoints(*points_added_.begin(), pt);
-        points_added_.insert(pt);
-    } else if(points_added_.size() > 1) {
-        const Arc to_remove =
-            (arcs_by_start_pt_.size() > 1) ? arcs_by_start_pt_.find(last_pt_added)->second : arcs_by_start_pt_.begin()->second;
-        // TODO: Handle points on same arc efficiently
-        bool ruled_out = (to_remove.IsBetweenArcAndLine(pt) > 0);
-        fprintf(stderr, "ruled_out %i\n", (int)ruled_out);
-        if(!ruled_out) {
-            arcs_by_start_pt_.erase(to_remove.pt_a);
-            AddArcForPoints(to_remove.pt_a, pt);
-            AddArcForPoints(pt, to_remove.pt_b);
-            points_added_.insert(pt);
-            last_pt_added = pt;
-        }
-    }
-}
-
-void PointCloudHalfSpace2D::AddArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt) {
+PointCloudHalfSpace2D::Arc PointCloudHalfSpace2D::ArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt)const {
     assert(sorter(less_pt, more_pt));
     const Vec2f mid = (more_pt + less_pt) / 2.0f;
     const Vec2f dir = (less_pt - more_pt).Normalized();
     const Vec2f perp_dir(-dir.y, dir.x);
     Vec2f int_pt;
     bool intersection = line_intersection(div_o, div_o + div_d, mid, mid + perp_dir, int_pt);
-    if(intersection) {
-        arcs_by_start_pt_.insert(map<Vec2f, Arc>::value_type(less_pt, Arc(int_pt, less_pt, more_pt)));
-    }
+    assert(intersection);
+    return Arc(int_pt, less_pt, more_pt);
+}
+
+void PointCloudHalfSpace2D::AddArc(Arc const&arc) {
+    arcs_by_start_pt_.insert(map<Vec2f, Arc>::value_type(arc.pt_a, arc));
 }
 
 void PointCloudHalfSpace2D::GetArcs(std::vector<Arc> &output)const {

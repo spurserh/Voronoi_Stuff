@@ -41,6 +41,7 @@ struct PointCloudHalfSpace2D {
         Arc(Vec2f const&o,
             Vec2f const&pt_a,
             Vec2f const&pt_b);
+        Arc();
         
         // t is from 0 to 1
         Vec2f Point(float t)const;
@@ -68,12 +69,13 @@ private:
     const Vec2f div_o, div_d;
     const sort_by_pos_dir sorter;
     // Temp
-    std::set<Vec2f> points_added_;
     std::map<Vec2f, Arc> arcs_by_start_pt_;
-    Vec2f last_pt_added;
+    Vec2f mod_arc_start_pt_;
     
-    void AddPointIfNotRuledOut(Vec2f const&pt);
-    void AddArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt);
+    // Returns false if ruled out
+//    bool AddPointIfNotRuledOut(Vec2f const&pt);
+    Arc ArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt)const;
+    void AddArc(Arc const&arc);
 };
 
 
