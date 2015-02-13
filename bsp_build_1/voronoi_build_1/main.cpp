@@ -85,12 +85,20 @@ Init(void)
     points.push_back(Vec2f(-0.020000,-0.703333));
     points.push_back(Vec2f(0.773333,0.483333));
 #endif
-#if 1
+#if 0
     points.push_back(Vec2f(-0.906667,0.003333));
     points.push_back(Vec2f(0.720000,-0.216667));
     points.push_back(Vec2f(0.763333,0.113333));
     points.push_back(Vec2f(0.153333,0.256667));
     points.push_back(Vec2f(-0.426667,0.063333));
+#endif
+#if 1
+    points.push_back(Vec2f(-1.070000,0.400000));
+    points.push_back(Vec2f(-0.766667,0.143333));
+    points.push_back(Vec2f(-0.356667,-0.156667));
+    points.push_back(Vec2f(0.086667,-0.463333));
+    points.push_back(Vec2f(0.566667,-0.713333));
+    points.push_back(Vec2f(1.096667,0.203333));
 #endif
 }
 

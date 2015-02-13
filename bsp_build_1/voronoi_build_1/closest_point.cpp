@@ -144,6 +144,8 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
                     AddArc(ArcForPoints(front_pt, back_pt));
                     mod_arc_start_pt_ = front_pt;
                     AddArc(back_arcs[1]);
+                    points_sorted.pop_front();
+                    points_sorted.pop_back();
                 }
             }
         }
