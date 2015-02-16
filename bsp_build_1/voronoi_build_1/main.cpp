@@ -96,8 +96,7 @@ Init(void)
     points.push_back(Vec2f(-1.070000,0.400000));
     points.push_back(Vec2f(-0.766667,0.143333));
     points.push_back(Vec2f(-0.356667,-0.156667));
-    points.push_back(Vec2f(0.086667,-0.463333));
-    points.push_back(Vec2f(0.566667,-0.713333));
+    points.push_back(Vec2f(0.086667,-0.463333));    // Should be ruled out, but isn't
     points.push_back(Vec2f(1.096667,0.203333));
 #endif
 }

@@ -93,7 +93,8 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
             if (points_sorted.size() == 1) {
                 Vec2f const&pt = points_sorted.front();
                 if(prev_arc.IsBetweenArcAndLine(pt) <= 0) {
-                    arcs_by_start_pt_.erase(mod_arc_start_pt_);
+                    DeleteArcByStart(mod_arc_start_pt_);
+                    // We may extend our arcs in either direction
                     AddArc(ArcForPoints(prev_arc.pt_a, pt));
                     AddArc(ArcForPoints(pt, prev_arc.pt_b));
                 }
@@ -136,7 +137,7 @@ PointCloudHalfSpace2D::PointCloudHalfSpace2D(Vec2f const&div_o,
                     points_sorted.pop_back();
                     continue;
                 } else {
-                    arcs_by_start_pt_.erase(mod_arc_start_pt_);
+                    DeleteArcByStart(mod_arc_start_pt_);
                     // Need to tie-break
 //                    const bool front_first = front_d < back_d;
                     
@@ -163,8 +164,25 @@ PointCloudHalfSpace2D::Arc PointCloudHalfSpace2D::ArcForPoints(Vec2f const&less_
     return Arc(int_pt, less_pt, more_pt);
 }
 
+void PointCloudHalfSpace2D::DeleteArcByStart(Vec2f const&start_pt) {
+    assert(arcs_by_start_pt_.find(start_pt) != arcs_by_start_pt_.end());
+    Arc arc = arcs_by_start_pt_[start_pt];
+    arcs_by_start_pt_.erase(arc.pt_a);
+    arcs_by_end_pt_.erase(arc.pt_b);
+}
+
+void PointCloudHalfSpace2D::DeleteArcByEnd(Vec2f const&end_pt) {
+    assert(arcs_by_end_pt_.find(end_pt) != arcs_by_end_pt_.end());
+    Arc arc = arcs_by_end_pt_[end_pt];
+    arcs_by_start_pt_.erase(arc.pt_a);
+    arcs_by_end_pt_.erase(arc.pt_b);
+    
+}
+
+
 void PointCloudHalfSpace2D::AddArc(Arc const&arc) {
     arcs_by_start_pt_.insert(map<Vec2f, Arc>::value_type(arc.pt_a, arc));
+    arcs_by_end_pt_.insert(map<Vec2f, Arc>::value_type(arc.pt_b, arc));
 }
 
 void PointCloudHalfSpace2D::GetArcs(std::vector<Arc> &output)const {

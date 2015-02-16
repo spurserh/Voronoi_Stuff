@@ -70,12 +70,15 @@ private:
     const sort_by_pos_dir sorter;
     // Temp
     std::map<Vec2f, Arc> arcs_by_start_pt_;
+    std::map<Vec2f, Arc> arcs_by_end_pt_;
     Vec2f mod_arc_start_pt_;
     
     // Returns false if ruled out
 //    bool AddPointIfNotRuledOut(Vec2f const&pt);
     Arc ArcForPoints(Vec2f const&less_pt, Vec2f const&more_pt)const;
     void AddArc(Arc const&arc);
+    void DeleteArcByStart(Vec2f const&start_pt);
+    void DeleteArcByEnd(Vec2f const&start_pt);
 };
 
 
